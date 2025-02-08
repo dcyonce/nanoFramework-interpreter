@@ -281,8 +281,6 @@ esp_err_t NF_ESP32_Wireless_Disconnect()
 {
     esp_err_t ec;
 
-    NF_ESP32_IsToConnect = false;
-
     ec = esp_wifi_disconnect();
 
     if (ec != ESP_OK)

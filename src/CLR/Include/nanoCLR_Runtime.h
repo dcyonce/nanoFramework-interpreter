@@ -3688,7 +3688,7 @@ struct CLR_RT_ExecutionEngine
 
     HRESULT StartHardware();
 
-    static void Reboot(uint16_t rebootOptions);
+    static void Reboot(bool fHard);
 
     void JoinAllThreadsAndExecuteFinalizer();
 

@@ -4,29 +4,45 @@
 //
 
 #include "nf_sys_io_filesystem.h"
-#include "Esp32_DeviceMapping.h"
 
-void postManagedStorageEvent(bool pinState, uint32_t slotIndex)
+StorageEventType GetStorageEventType(bool pinState)
 {
-    PostManagedEvent(EVENT_STORAGE, StorageEventType_CardDetectChanged, pinState, slotIndex);
+    // Low means card inserted
+    return pinState ? StorageEventType_RemovableDeviceRemoval : StorageEventType_RemovableDeviceInsertion;
+}
+
+void postManagedStorageEvent(bool pinState, uint32_t driveIndex)
+{
+    PostManagedEvent(EVENT_STORAGE, 0, GetStorageEventType(pinState), driveIndex);
 }
 
 void cardDetect_interrupt(GPIO_PIN Pin, bool pinState, void *pArg)
 {
     (void)Pin;
 
-    // Decode pArg
-    int slotIndex = (uint32_t)0xff && pArg;
-
-    postManagedStorageEvent(pinState, slotIndex);
+    postManagedStorageEvent(pinState, (uint32_t)pArg);
 }
 
 #if SOC_SDMMC_HOST_SUPPORTED
 
-void GetMMCPins(int slotIndex, bool _1bit, int *count, int8_t **pPins)
+// Reserve all MMC pins
+// CMD, Data0, Data1, Data2, Data3
+int8_t pins4bit[] = {15, 2, 4, 12, 13};
+// CMD, Data0
+int8_t pins1bit[] = {15, 2};
+
+void GetMMCPins(bool _1bit, int *count, int8_t **pPins)
 {
-    *pPins = &Esp32_SDMMC_DevicePinMap[slotIndex][Esp32SdmmcPin_Clock];
-    *count = _1bit ? 3 : 6;
+    if (_1bit)
+    {
+        *pPins = pins1bit;
+        *count = sizeof(pins1bit);
+    }
+    else
+    {
+        *pPins = pins4bit;
+        *count = sizeof(pins4bit);
+    }
 }
 
 #endif
@@ -69,19 +85,15 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
     NANOCLR_HEADER();
 
     SDCard_SDInterfaceType cardType;
-    int slotIndex;
     bool useCardDetect = false;
-    bool cardDetectedState = false;
     int cardDetectPin;
-    bool cdPinState;
+    bool cardDetectpinState;
 
     // get a pointer to the managed object instance and check that it's not NULL
     CLR_RT_HeapBlock *pThis = stack.This();
     FAULT_ON_NULL(pThis);
 
-    slotIndex = (pThis[FIELD___slotIndex].NumericByRef().u4);
     useCardDetect = (bool)(pThis[FIELD___enableCardDetectPin].NumericByRef().s4);
-    cardDetectedState = (bool)(pThis[FIELD___cardDetectedState].NumericByRef().s4);
     cardDetectPin = (int)(pThis[FIELD___cardDetectPin].NumericByRef().s4);
 
     cardType = (SDCard_SDInterfaceType)pThis[FIELD___sdCardType].NumericByRef().s4;
@@ -90,13 +102,12 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
         case SDCard_SDInterfaceType::SDCard_SDInterfaceType_Mmc:
         {
 #if SOC_SDMMC_HOST_SUPPORTED
-
             bool bit1Mode = pThis[FIELD___dataWidth].NumericByRef().s4 == SDCard_SDDataWidth::SDCard_SDDataWidth__1_bit;
 
             int count;
             int8_t *pPins;
 
-            GetMMCPins(slotIndex, bit1Mode, &count, &pPins);
+            GetMMCPins(bit1Mode, &count, &pPins);
 
             if (!TryReservePins(count, pPins))
             {
@@ -110,6 +121,7 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
 
         case SDCard_SDInterfaceType::SDCard_SDInterfaceType_Spi:
             // TODO reserve pins ?
+            //  or init SPI
             break;
 
         // No predefined system SD card or other
@@ -126,27 +138,24 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
         }
 
         // Set interrupt for change on Card Detect GPIO pin
-        PinMode pullups = cardDetectedState ? PinMode::PinMode_InputPullDown : PinMode::PinMode_InputPullUp;
-
         if (!CPU_GPIO_EnableInputPin(
                 cardDetectPin,
-                200,
+                100,
                 cardDetect_interrupt,
-                (void *)slotIndex,
+                0,
                 GPIO_INT_EDGE::GPIO_INT_EDGE_BOTH,
-                pullups))
+                PinMode::PinMode_InputPullUp))
         {
             CPU_GPIO_ReservePin(cardDetectPin, false);
             NANOCLR_SET_AND_LEAVE(CLR_E_INVALID_PARAMETER);
         }
 
-        // Check if we need to fire an event on start
-        cdPinState = CPU_GPIO_GetPinState(cardDetectPin);
-        if (cdPinState == cardDetectedState)
+        cardDetectpinState = CPU_GPIO_GetPinState(cardDetectPin);
+        if (GetStorageEventType(cardDetectpinState) == StorageEventType_RemovableDeviceInsertion)
         {
             // Fire event for initial card detect state if card inserted
             // This is so mount can be done solely in event handler
-            postManagedStorageEvent(cdPinState, slotIndex);
+            postManagedStorageEvent(cardDetectpinState, 0);
         }
     }
 
@@ -160,17 +169,10 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
 
     SDCard_SDInterfaceType cardType;
     int cardDetectPin;
-#if SOC_SDMMC_HOST_SUPPORTED
-    int slotIndex;
-#endif
 
     // get a pointer to the managed object instance and check that it's not NULL
     CLR_RT_HeapBlock *pThis = stack.This();
     FAULT_ON_NULL(pThis);
-
-#if SOC_SDMMC_HOST_SUPPORTED
-    slotIndex = (pThis[FIELD___slotIndex].NumericByRef().u4);
-#endif
 
     if ((bool)(pThis[FIELD___enableCardDetectPin].NumericByRef().s4))
     {
@@ -192,7 +194,7 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
             int count;
             int8_t *pPins;
 
-            GetMMCPins(slotIndex, bit1Mode, &count, &pPins);
+            GetMMCPins(bit1Mode, &count, &pPins);
 
             UnReservePins(count, pPins);
 #else
@@ -216,8 +218,6 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
 #if (HAL_USE_SDC == TRUE)
 
     SDCard_SDInterfaceType cardType;
-    int slotIndex;
-    char mountPoint[] = INDEX0_DRIVE_LETTER;
 
     // get a pointer to the managed object instance and check that it's not NULL
     CLR_RT_HeapBlock *pThis = stack.This();
@@ -228,8 +228,6 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
         NANOCLR_SET_AND_LEAVE(CLR_E_OBJECT_DISPOSED);
     }
 
-    slotIndex = (pThis[FIELD___slotIndex].NumericByRef().u4);
-
     pThis[FIELD___mounted].NumericByRef().s4 = 0;
 
     // Get Card type so we know what parameters to use
@@ -239,14 +237,9 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
         case SDCard_SDInterfaceType::SDCard_SDInterfaceType_Mmc:
         {
 #if SOC_SDMMC_HOST_SUPPORTED
-            if (slotIndex < 0 || slotIndex > (CONFIG_SOC_SDMMC_NUM_SLOTS - 1))
-            {
-                NANOCLR_SET_AND_LEAVE(CLR_E_INVALID_PARAMETER);
-            }
-
             bool bit1Mode = pThis[FIELD___dataWidth].NumericByRef().s4 == SDCard_SDDataWidth::SDCard_SDDataWidth__1_bit;
 
-            if (!Storage_MountMMC(bit1Mode, slotIndex))
+            if (!Storage_MountMMC(bit1Mode, 0))
             {
                 NANOCLR_SET_AND_LEAVE(CLR_E_VOLUME_NOT_FOUND);
             }
@@ -262,12 +255,6 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
             int chipSelectPin;
             SPI_DEVICE_CONFIGURATION spiConfig;
 
-            // Allow drive index 0-3 for SPI
-            if (slotIndex < 0 || slotIndex >= 4)
-            {
-                NANOCLR_SET_AND_LEAVE(CLR_E_INVALID_PARAMETER);
-            }
-
             // internally SPI bus ID is zero based
             busIndex = (int)(pThis[FIELD___spiBus].NumericByRef().s4 - 1);
             chipSelectPin = (int)(pThis[FIELD___chipSelectPin].NumericByRef().s4);
@@ -280,9 +267,9 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
             CPU_SPI_Initialize(busIndex, spiConfig);
 
             // Try mount twice
-            if (!Storage_MountSpi(busIndex, chipSelectPin, slotIndex))
+            if (!Storage_MountSpi(busIndex, chipSelectPin, 0))
             {
-                if (!Storage_MountSpi(busIndex, chipSelectPin, slotIndex))
+                if (!Storage_MountSpi(busIndex, chipSelectPin, 0))
                 {
                     NANOCLR_SET_AND_LEAVE(CLR_E_VOLUME_NOT_FOUND);
                 }
@@ -297,8 +284,7 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
     } // switch
 
     // add volume to the file system
-    mountPoint[0] += slotIndex;
-    FS_MountVolume(mountPoint, 0, "FATFS");
+    FS_MountVolume(INDEX0_DRIVE_LETTER, 0, "FATFS");
 
     pThis[FIELD___mounted].NumericByRef().s4 = 1;
 
@@ -320,7 +306,6 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
 #if (HAL_USE_SDC == TRUE)
 
     SDCard_SDInterfaceType cardType;
-    int slotIndex;
 
     // get a pointer to the managed object instance and check that it's not NULL
     CLR_RT_HeapBlock *pThis = stack.This();
@@ -331,8 +316,6 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
         NANOCLR_SET_AND_LEAVE(CLR_E_OBJECT_DISPOSED);
     }
 
-    slotIndex = (pThis[FIELD___slotIndex].NumericByRef().u4);
-
     cardType = (SDCard_SDInterfaceType)pThis[FIELD___sdCardType].NumericByRef().s4;
     switch (cardType)
     {
@@ -340,7 +323,7 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
         case SDCard_SDInterfaceType_Spi:
 
             // Unmount SPI device
-            if (!Storage_UnMountSDCard(slotIndex))
+            if (!Storage_UnMountSDCard(0))
             {
                 // SDcard not mounted
                 NANOCLR_SET_AND_LEAVE(CLR_E_INVALID_OPERATION);
@@ -375,7 +358,6 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
 #if (HAL_USE_SDC == TRUE)
 
     int cardDetectPin;
-    GpioPinValue detectedState;
     CLR_RT_HeapBlock *pThis = stack.This();
     FAULT_ON_NULL(pThis);
 
@@ -391,8 +373,7 @@ HRESULT Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard::
 
     // Poll Card Detect pin
     cardDetectPin = (int)pThis[FIELD___cardDetectPin].NumericByRef().s4;
-    detectedState = (bool)pThis[FIELD___cardDetectedState].NumericByRef().s4 ? GpioPinValue_High : GpioPinValue_Low;
-    stack.SetResult_Boolean(CPU_GPIO_GetPinState(cardDetectPin) == detectedState);
+    stack.SetResult_Boolean(CPU_GPIO_GetPinState(cardDetectPin) == GpioPinValue_Low);
 
 #else
 

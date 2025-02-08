@@ -471,11 +471,7 @@ HRESULT FindOneDevice(CLR_RT_StackFrame &stack, bool findFirst)
 
         if (status != TX_SUCCESS)
         {
-            // failed to create the thread
-            // free stack memory
-            platform_free(workingThreadStack);
-
-            NANOCLR_SET_AND_LEAVE(CLR_E_FAIL);
+            NANOCLR_SET_AND_LEAVE(CLR_E_PROCESS_EXCEPTION);
         }
 
         // bump custom state

@@ -105,7 +105,6 @@ HRESULT Library_sys_dev_usbstream_native_System_Device_Usb_UsbStream::Read___I4_
     // dereference the data buffer from the argument
     dataBuffer = stack.Arg1().DereferenceArray();
     FAULT_ON_NULL_ARG(dataBuffer);
-    dataBuffer->Pin();
 
     offset = stack.Arg2().NumericByRef().s4;
     count = stack.Arg3().NumericByRef().s4;
@@ -200,18 +199,7 @@ HRESULT Library_sys_dev_usbstream_native_System_Device_Usb_UsbStream::Read___I4_
     // set result with count of bytes received
     stack.SetResult_I4(UsbStream_PAL.RxBytesReceived);
 
-    NANOCLR_CLEANUP();
-
-    if (hr != CLR_E_THREAD_WAITING)
-    {
-        // need to clean up the buffer, if this was not rescheduled
-        if (dataBuffer != NULL && dataBuffer->IsPinned())
-        {
-            dataBuffer->Unpin();
-        }
-    }
-
-    NANOCLR_CLEANUP_END();
+    NANOCLR_NOCLEANUP();
 }
 
 HRESULT Library_sys_dev_usbstream_native_System_Device_Usb_UsbStream::Write___VOID__SZARRAY_U1__I4__I4(
@@ -247,7 +235,6 @@ HRESULT Library_sys_dev_usbstream_native_System_Device_Usb_UsbStream::Write___VO
     // dereference the data buffer from the argument
     dataBuffer = stack.Arg1().DereferenceArray();
     FAULT_ON_NULL_ARG(dataBuffer);
-    dataBuffer->Pin();
 
     offset = stack.Arg2().NumericByRef().s4;
     count = stack.Arg3().NumericByRef().s4;
@@ -360,18 +347,7 @@ HRESULT Library_sys_dev_usbstream_native_System_Device_Usb_UsbStream::Write___VO
     // pop timeout heap block from stack
     stack.PopValue();
 
-    NANOCLR_CLEANUP();
-
-    if (isLongRunning && hr != CLR_E_THREAD_WAITING)
-    {
-        // need to clean up the buffer, if this was not rescheduled
-        if (dataBuffer != NULL && dataBuffer->IsPinned())
-        {
-            dataBuffer->Unpin();
-        }
-    }
-
-    NANOCLR_CLEANUP_END();
+    NANOCLR_NOCLEANUP();
 }
 
 HRESULT Library_sys_dev_usbstream_native_System_Device_Usb_UsbStream::get_IsConnected___BOOLEAN(

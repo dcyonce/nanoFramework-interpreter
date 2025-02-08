@@ -48,18 +48,16 @@ static void CompleteTranfer(NF_PAL_SPI *palSpi)
     if (palSpi->ReadSize > 0)
     {
         // because this was a Read transaction, need to copy from DMA buffer to managed buffer
-        int readSize = palSpi->ReadSize;
+        int ReadSize = palSpi->ReadSize;
 
         // Adjust read size for data width of 16bits
         if (palSpi->BufferIs16bits)
-        {
-            readSize *= 2;
-        }
+            ReadSize *= 2;
 
         // invalidate cache over read buffer to ensure that content from DMA is read
         // (only required for Cortex-M7)
         // get the pointer to the read buffer as UINT16 because it's really an UINT16 (2 bytes)
-        cacheBufferInvalidate(palSpi->ReadBuffer, readSize);
+        cacheBufferInvalidate(palSpi->ReadBuffer, (palSpi->ReadSize * 2));
     }
 }
 

@@ -62,7 +62,12 @@ bool IsMarkerMatched(void *header, const void *marker, size_t len)
     return memcmp(header, marker, len) == 0;
 }
 
-bool SyncToMessageStart()
+void ShiftBufferToLeft(void *buffer, uint32_t len)
+{
+    memmove((uint8_t *)buffer, ((uint8_t *)buffer + 1), len - 1);
+}
+
+void SyncToMessageStart()
 {
     uint32_t len;
 
@@ -83,33 +88,16 @@ bool SyncToMessageStart()
             break;
         }
 
-        // Calculate the source and destination pointers
-        uint8_t *src = (uint8_t *)&_inboundMessage.m_header + 1;
-        uint8_t *dst = (uint8_t *)&_inboundMessage.m_header;
-        size_t moveLength = len - 1;
+        ShiftBufferToLeft(&_inboundMessage.m_header, len);
 
-        // Ensure that the memory regions do not exceed allocated bounds
-        if ((src + moveLength >= (uint8_t *)&_inboundMessage + sizeof(_inboundMessage)) ||
-            (dst + moveLength >= (uint8_t *)&_inboundMessage + sizeof(_inboundMessage)))
-        {
-            return false;
-        }
-
-        // Perform the memory move
-        memmove(dst, src, moveLength);
-
-        // Update pointer and expected size
+        // update pointer and expected size
         _pos--;
         _size++;
 
-        // Sanity checks
-        if (_size > sizeof(_inboundMessage.m_header) || _pos < (uint8_t *)&_inboundMessage.m_header)
-        {
-            return false;
-        }
+        // sanity checks
+        _ASSERTE(_size <= sizeof(_inboundMessage.m_header));
+        _ASSERTE(_pos >= (uint8_t *)&(_inboundMessage.m_header));
     }
-
-    return true;
 }
 
 void WP_ReplyToCommand(WP_Message *message, uint8_t fSuccess, uint8_t fCritical, void *ptr, uint32_t size)
@@ -369,16 +357,7 @@ void WP_Message_Process()
                     }
                 }
 
-                if (!SyncToMessageStart())
-                {
-                    // something went wrong
-                    TRACE0(TRACE_ERRORS, "RxError: Failed to sync to message start\n");
-
-                    RestartStateMachine();
-
-                    // exit the loop to allow other RTOS threads to run
-                    return;
-                }
+                SyncToMessageStart();
 
                 if (len >= sizeof(_inboundMessage.m_header.m_signature))
                 {

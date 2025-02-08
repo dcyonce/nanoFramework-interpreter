@@ -1011,7 +1011,6 @@ struct CLR_RECORD_ASSEMBLY
 
     bool GoodHeader() const;
     bool GoodAssembly() const;
-    bool ValidateMarker() const;
 
 #if defined(VIRTUAL_DEVICE)
     void ComputeCRC();

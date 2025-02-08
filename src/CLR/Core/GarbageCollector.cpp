@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) .NET Foundation and Contributors
 // Portions Copyright (c) Microsoft Corporation.  All rights reserved.
 // See LICENSE file in the project root for full license information.
@@ -144,7 +144,7 @@ CLR_UINT32 CLR_RT_GarbageCollector::ExecuteGarbageCollection()
 #if defined(NANOCLR_GC_VERBOSE)
     if (s_CLR_RT_fTrace_GC >= c_CLR_RT_Trace_Info)
     {
-        CLR_Debug::Printf("\r\n\r\nGC: Start %s\r\n", HAL_Time_CurrentDateTimeToString());
+        CLR_Debug::Printf("\r\n\r\n    Memory: Start %s\r\n", HAL_Time_CurrentDateTimeToString());
     }
 #endif
 
@@ -269,10 +269,7 @@ CLR_UINT32 CLR_RT_GarbageCollector::ExecuteGarbageCollection()
 #if defined(NANOCLR_GC_VERBOSE)
     if (s_CLR_RT_fTrace_GC >= c_CLR_RT_Trace_Info)
     {
-        CLR_Debug::Printf(
-            "\r\n\r\nGC: (Run #%d) End %s\r\n",
-            m_numberOfGarbageCollections,
-            HAL_Time_CurrentDateTimeToString());
+        CLR_Debug::Printf("\r\n\r\n    Memory: End %s\r\n", HAL_Time_CurrentDateTimeToString());
     }
 #endif
 
@@ -610,36 +607,29 @@ void CLR_RT_GarbageCollector::CheckMemoryPressure()
                 {
                     if (weak->m_targetSerialized && weak->m_targetDirect == NULL)
                     {
-#if defined(NANOCLR_GC_VERBOSE) && !defined(BUILD_RTM)
-
+#if !defined(BUILD_RTM)
                         CLR_RT_ReflectionDef_Index val{};
                         CLR_RT_TypeDef_Instance inst{};
                         char rgBuffer[512];
                         char *szBuffer = rgBuffer;
                         size_t iBuffer = MAXSTRLEN(rgBuffer);
 
-                        if (s_CLR_RT_fTrace_Memory >= c_CLR_RT_Trace_Info)
+                        CLR_Debug::Printf("DROPPING OBJECT ");
+
+                        val.InitializeFromHash(weak->m_identity.m_selectorHash);
+
+                        if (inst.InitializeFromReflection(val, NULL))
                         {
-                            CLR_Debug::Printf("DROPPING OBJECT %s:%d ", rgBuffer, weak->m_identity.m_id);
+                            g_CLR_RT_TypeSystem.BuildTypeName(inst, szBuffer, iBuffer);
+                            rgBuffer[MAXSTRLEN(rgBuffer)] = 0;
 
-                            // Move this under a separate check
-                            if (s_CLR_RT_fTrace_Memory >= c_CLR_RT_Trace_Verbose)
-                            {
-                                val.InitializeFromHash(weak->m_identity.m_selectorHash);
-
-                                if (inst.InitializeFromReflection(val, NULL))
-                                {
-                                    g_CLR_RT_TypeSystem.BuildTypeName(inst, szBuffer, iBuffer);
-                                    rgBuffer[MAXSTRLEN(rgBuffer)] = 0;
-                                    CLR_Debug::Printf("[%s] ", rgBuffer);
-                                }
-                            }
-
-                            CLR_Debug::Printf(
-                                "[%d bytes] %s\r\n",
-                                weak->m_targetSerialized->m_numOfElements,
-                                (weak->m_targetDirect ? "DIRECT" : ""));
+                            CLR_Debug::Printf("%s:%d ", rgBuffer, weak->m_identity.m_id);
                         }
+
+                        CLR_Debug::Printf(
+                            " [%d bytes] %s\r\n",
+                            weak->m_targetSerialized->m_numOfElements,
+                            (weak->m_targetDirect ? "DIRECT" : ""));
 #endif
 
                         break;
