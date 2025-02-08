@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) .NET Foundation and Contributors
 // Portions Copyright (c) 2006 - 2021 Skirrid Systems. All rights reserved.
 // See LICENSE file in the project root for full license information.
@@ -93,7 +93,7 @@ Floating point
   #define DP_LIMIT      310
   #define MAX_POWER     256
 // [NF_CHANGE]
-  #define FLOAT_DIGITS  19
+  #define FLOAT_DIGITS  18
 // [END_NF_CHANGE]
 #else
   #define DP_LIMIT      40
@@ -271,8 +271,6 @@ static char *format_float(double number, flt_width_t ndigits, flt_width_t width,
              * to the answer in the fastest time, with the minimum number of
              * operations to introduce rounding errors.
              */
-
-            // Normalise the number such that it lies in the range 1 <= n < 10.
             // First make small numbers bigger.
 
             i = 0;
@@ -1079,14 +1077,7 @@ static printf_t doprnt(void *context, void (*func)(char c, void *context), size_
 #ifdef BASIC_PRINTF_ONLY
                 func(c);            // Basic output function.
 #else
-// [NF_CHANGE]
-                // only print if there is space in the buffer
-                if (count < n)
-                {
-                    func(c, context);   // Output function.
-                }
-// [END NF_CHANGE]
-
+                func(c, context);   // Output function.
 #endif
 #ifdef PRINTF_T
                 ++count;
@@ -1112,13 +1103,7 @@ static printf_t doprnt(void *context, void (*func)(char c, void *context), size_
 #ifdef BASIC_PRINTF_ONLY
             func(convert);              // Basic output function.
 #else
-// [NF_CHANGE]
-        // only print if there is space in the buffer
-        if (count < n)
-        {
             func(convert, context);     // Output function.
-        }
-// [END NF_CHANGE]
 #endif
 #ifdef PRINTF_T
             ++count;
@@ -1236,19 +1221,15 @@ printf_t sprintf_(char *buf, const char *fmt, ... )
 printf_t snprintf_(char *buf, size_t n,const char *fmt, ... )
 {
     va_list ap;
-    int count;
+    int Count;
 
     va_start(ap, fmt);
-    count = doprnt(&buf, putbuf, n - 1, fmt, ap);
+    Count = doprnt(&buf, putbuf, n, fmt, ap);
     va_end(ap);
-
-    // Append null terminator if there's space.
-    if (n > 0)
-    {
-        *buf = '\0';
-    }
+    // Append null terminator.
+    *buf = '\0';
     
-   return count;
+   return Count;
 }
 // [END_NF_CHANGE]
 
@@ -1270,6 +1251,16 @@ printf_t vsnprintf_(char *buffer, size_t bufsz, char const *format, va_list vlis
 
     // Perform the actual formatting operation
     count = doprnt(&buffer, putbuf, bufsz, format, vlistCopy);
+
+    // append null terminator
+    if(count < bufsz)
+    {
+        buffer[count] = '\0';
+    }
+    else
+    {
+        buffer[bufsz - 1] = '\0';
+    }
 
     // Clean up the copied variable argument list
     va_end(vlistCopy);

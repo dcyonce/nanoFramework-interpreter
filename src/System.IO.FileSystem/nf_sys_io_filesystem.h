@@ -21,12 +21,6 @@
      FileAttributes::FileAttributes_System | FileAttributes::FileAttributes_Directory |                                \
      FileAttributes::FileAttributes_Archive)
 
-typedef enum __nfpack CardDetectState
-{
-    CardDetectState_Inserted = 0,
-    CardDetectState_Removed = 1,
-} CardDetectState;
-
 typedef enum __nfpack SDCard_SDDataWidth
 {
     SDCard_SDDataWidth__1_bit = 1,
@@ -51,7 +45,6 @@ typedef enum __nfpack StorageEventManager_StorageEventType
     StorageEventManager_StorageEventType_Invalid = 0,
     StorageEventManager_StorageEventType_RemovableDeviceInsertion = 1,
     StorageEventManager_StorageEventType_RemovableDeviceRemoval = 2,
-    StorageEventManager_StorageEventType_CardDetectChanged = 3,
 } StorageEventManager_StorageEventType;
 
 typedef enum __nfpack DriveType
@@ -98,28 +91,16 @@ typedef enum __nfpack FileShare
     FileShare_ReadWrite = 3,
 } FileShare;
 
-struct Library_nf_sys_io_filesystem_nanoFramework_System_IO_CardDetectChangedEventArgs
-{
-    static const int FIELD___cardState = 1;
-    static const int FIELD___slotIndex = 2;
-
-    //--//
-};
-
 struct Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard
 {
     static const int FIELD___mounted = 1;
     static const int FIELD___disposed = 2;
     static const int FIELD___sdCardType = 3;
     static const int FIELD___enableCardDetectPin = 4;
-    static const int FIELD___cardDetectedState = 5;
-    static const int FIELD___cardDetectPin = 6;
-    static const int FIELD___slotIndex = 7;
-    static const int FIELD___autoMount = 8;
-    static const int FIELD___dataWidth = 9;
-    static const int FIELD___spiBus = 10;
-    static const int FIELD___chipSelectPin = 11;
-    static const int FIELD__CardDetectChanged = 12;
+    static const int FIELD___cardDetectPin = 5;
+    static const int FIELD___dataWidth = 6;
+    static const int FIELD___spiBus = 7;
+    static const int FIELD___chipSelectPin = 8;
 
     NANOCLR_NATIVE_DECLARE(InitNative___VOID);
     NANOCLR_NATIVE_DECLARE(NativeDispose___VOID);
@@ -130,19 +111,21 @@ struct Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard
     //--//
 };
 
-struct Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCardMmcParameters
+struct Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard__SDCardMmcParameters
 {
-    static const int FIELD__slotIndex = 1;
-    static const int FIELD__dataWidth = 2;
+    static const int FIELD__dataWidth = 1;
+    static const int FIELD__enableCardDetectPin = 2;
+    static const int FIELD__cardDetectPin = 3;
 
     //--//
 };
 
-struct Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCardSpiParameters
+struct Library_nf_sys_io_filesystem_nanoFramework_System_IO_FileSystem_SDCard__SDCardSpiParameters
 {
-    static const int FIELD__slotIndex = 1;
-    static const int FIELD__spiBus = 2;
-    static const int FIELD__chipSelectPin = 3;
+    static const int FIELD__spiBus = 1;
+    static const int FIELD__chipSelectPin = 2;
+    static const int FIELD__enableCardDetectPin = 3;
+    static const int FIELD__cardDetectPin = 4;
 
     //--//
 };
@@ -178,7 +161,6 @@ struct Library_nf_sys_io_filesystem_nanoFramework_System_IO_StorageEventManager
     static const int FIELD_STATIC__RemovableDeviceInserted = 0;
     static const int FIELD_STATIC__RemovableDeviceRemoved = 1;
     static const int FIELD_STATIC___drives = 2;
-    static const int FIELD_STATIC___sdCardList = 3;
 
     //--//
 };
@@ -188,7 +170,6 @@ struct Library_nf_sys_io_filesystem_nanoFramework_System_IO_StorageEventManager_
     static const int FIELD__EventType = 3;
     static const int FIELD__VolumeIndex = 4;
     static const int FIELD__Time = 5;
-    static const int FIELD__state = 6;
 
     //--//
 };
@@ -213,10 +194,10 @@ struct Library_nf_sys_io_filesystem_System_IO_FileSystemManager__FileRecord
 
 struct Library_nf_sys_io_filesystem_System_IO_FileSystemManager
 {
-    static const int FIELD_STATIC___openFiles = 4;
-    static const int FIELD_STATIC___lockedDirs = 5;
-    static const int FIELD_STATIC___currentDirectoryRecord = 6;
-    static const int FIELD_STATIC__CurrentDirectory = 7;
+    static const int FIELD_STATIC___openFiles = 3;
+    static const int FIELD_STATIC___lockedDirs = 4;
+    static const int FIELD_STATIC___currentDirectoryRecord = 5;
+    static const int FIELD_STATIC__CurrentDirectory = 6;
 
     //--//
 };
@@ -237,7 +218,7 @@ struct Library_nf_sys_io_filesystem_System_IO_FileStream
 
 struct Library_nf_sys_io_filesystem_System_IO_File
 {
-    static const int FIELD_STATIC__EmptyBytes = 8;
+    static const int FIELD_STATIC__EmptyBytes = 7;
 
     //--//
 };
@@ -301,10 +282,10 @@ struct Library_nf_sys_io_filesystem_System_IO_NativeIO
 
 struct Library_nf_sys_io_filesystem_System_IO_Path
 {
-    static const int FIELD_STATIC__DirectorySeparatorChar = 9;
-    static const int FIELD_STATIC__AltDirectorySeparatorChar = 10;
-    static const int FIELD_STATIC__VolumeSeparatorChar = 11;
-    static const int FIELD_STATIC__PathSeparator = 12;
+    static const int FIELD_STATIC__DirectorySeparatorChar = 8;
+    static const int FIELD_STATIC__AltDirectorySeparatorChar = 9;
+    static const int FIELD_STATIC__VolumeSeparatorChar = 10;
+    static const int FIELD_STATIC__PathSeparator = 11;
 
     //--//
 };

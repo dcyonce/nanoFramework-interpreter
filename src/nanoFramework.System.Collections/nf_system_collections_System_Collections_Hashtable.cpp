@@ -62,15 +62,13 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::Clear___VOID
     NANOCLR_NOCLEANUP();
 }
 
-HRESULT Library_nf_system_collections_System_Collections_Hashtable::ContainsNative___BOOLEAN__OBJECT__I4(
-    CLR_RT_StackFrame &stack)
+HRESULT Library_nf_system_collections_System_Collections_Hashtable::Contains___BOOLEAN__OBJECT(CLR_RT_StackFrame &stack)
 {
     NANOCLR_HEADER();
 
     int32_t entry = 0;
     int32_t bucketNumber;
     uint32_t hashcode;
-    int32_t keyHashCode;
     uint32_t seed;
     uint32_t incr;
     int32_t bucketsLength;
@@ -87,12 +85,10 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::ContainsNati
     key = stack.Arg1().Dereference();
     FAULT_ON_NULL_ARG(key);
 
-    keyHashCode = stack.Arg2().NumericByRef().s4;
-
     buckets = pThis[FIELD___buckets].DereferenceArray();
     bucketsLength = buckets->m_numOfElements;
 
-    hashcode = InitHash(keyHashCode, bucketsLength, &seed, &incr);
+    hashcode = InitHash(key, bucketsLength, &seed, &incr);
 
     bucketNumber = (int)(seed % (uint32_t)bucketsLength);
 
@@ -121,15 +117,13 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::ContainsNati
     NANOCLR_NOCLEANUP();
 }
 
-HRESULT Library_nf_system_collections_System_Collections_Hashtable::RemoveNative___VOID__OBJECT__I4(
-    CLR_RT_StackFrame &stack)
+HRESULT Library_nf_system_collections_System_Collections_Hashtable::Remove___VOID__OBJECT(CLR_RT_StackFrame &stack)
 {
     NANOCLR_HEADER();
 
     int32_t entry = 0;
     int32_t bucketNumber;
     uint32_t hashcode;
-    int32_t keyHashCode;
     uint32_t seed;
     uint32_t incr;
     int32_t bucketsLength;
@@ -146,12 +140,10 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::RemoveNative
     key = stack.Arg1().Dereference();
     FAULT_ON_NULL_ARG(key);
 
-    keyHashCode = stack.Arg2().NumericByRef().s4;
-
     buckets = pThis[FIELD___buckets].DereferenceArray();
     bucketsLength = buckets->m_numOfElements;
 
-    hashcode = InitHash(keyHashCode, bucketsLength, &seed, &incr);
+    hashcode = InitHash(key, bucketsLength, &seed, &incr);
 
     bucketNumber = (int)(seed % (uint32_t)bucketsLength);
 
@@ -186,7 +178,7 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::RemoveNative
     NANOCLR_NOCLEANUP();
 }
 
-HRESULT Library_nf_system_collections_System_Collections_Hashtable::InsertNative___VOID__OBJECT__OBJECT__BOOLEAN__I4(
+HRESULT Library_nf_system_collections_System_Collections_Hashtable::InsertNative___VOID__OBJECT__OBJECT__BOOLEAN(
     CLR_RT_StackFrame &stack)
 {
     NANOCLR_HEADER();
@@ -195,7 +187,6 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::InsertNative
     uint32_t entry = 0;
     int32_t bucketNumber;
     uint32_t hashcode;
-    int32_t keyHashCode;
     uint32_t seed;
     uint32_t incr;
     uint32_t bucketsLength;
@@ -217,8 +208,6 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::InsertNative
 
     add = (bool)stack.Arg3().NumericByRef().u1;
 
-    keyHashCode = stack.Arg4().NumericByRef().s4;
-
     if (pThis[FIELD___count].NumericByRef().s4 >= pThis[FIELD___loadsize].NumericByRef().s4)
     {
         NANOCLR_CHECK_HRESULT(Expand(stack));
@@ -227,7 +216,7 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::InsertNative
     buckets = pThis[FIELD___buckets].DereferenceArray();
     bucketsLength = buckets->m_numOfElements;
 
-    hashcode = InitHash(keyHashCode, bucketsLength, &seed, &incr);
+    hashcode = InitHash(key, bucketsLength, &seed, &incr);
 
     bucketNumber = (int)(seed % bucketsLength);
 
@@ -244,6 +233,8 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::InsertNative
 
             CLR_RT_TypeDef_Index bucketTypeDef;
             CLR_RT_HeapBlock newBucket;
+
+            memset(&newBucket, 0, sizeof(struct CLR_RT_HeapBlock));
 
             if (bucket == NULL)
             {
@@ -295,15 +286,13 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::InsertNative
     NANOCLR_NOCLEANUP();
 }
 
-HRESULT Library_nf_system_collections_System_Collections_Hashtable::GetNative___OBJECT__OBJECT__I4(
-    CLR_RT_StackFrame &stack)
+HRESULT Library_nf_system_collections_System_Collections_Hashtable::GetNative___OBJECT__OBJECT(CLR_RT_StackFrame &stack)
 {
     NANOCLR_HEADER();
 
     int32_t entry = 0;
     int32_t bucketNumber;
     uint32_t hashcode;
-    int32_t keyHashCode;
     uint32_t seed;
     uint32_t incr;
     int32_t bucketsLength;
@@ -320,12 +309,10 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::GetNative___
     key = stack.Arg1().Dereference();
     FAULT_ON_NULL_ARG(key);
 
-    keyHashCode = stack.Arg2().NumericByRef().s4;
-
     buckets = pThis[FIELD___buckets].DereferenceArray();
     bucketsLength = buckets->m_numOfElements;
 
-    hashcode = InitHash(keyHashCode, bucketsLength, &seed, &incr);
+    hashcode = InitHash(key, bucketsLength, &seed, &incr);
 
     bucketNumber = (int)(seed % (uint32_t)bucketsLength);
 
@@ -432,6 +419,7 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::Expand(CLR_R
     g_CLR_RT_TypeSystem.FindTypeDef("Bucket", "System.Collections", bucketTypeDef);
 
     // create a new array of <Bucket>
+    memset(&newBucketsHB, 0, sizeof(struct CLR_RT_HeapBlock));
     CLR_RT_ProtectFromGC gc(newBucketsHB);
 
     if (i == lenghtOfPrimes)
@@ -466,8 +454,8 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::Expand(CLR_R
                     // create a new <Bucket>
                     CLR_RT_HeapBlock newBucket;
 
+                    memset(&newBucket, 0, sizeof(struct CLR_RT_HeapBlock));
                     NANOCLR_CHECK_HRESULT(g_CLR_RT_ExecutionEngine.NewObjectFromIndex(newBucket, bucketTypeDef))
-
                     newBucketElement->LoadFromReference(newBucket);
                     bucket = newBucketElement->Dereference();
 
@@ -497,13 +485,15 @@ HRESULT Library_nf_system_collections_System_Collections_Hashtable::Expand(CLR_R
 }
 
 uint32_t Library_nf_system_collections_System_Collections_Hashtable::InitHash(
-    const int32_t keyHashCode,
+    CLR_RT_HeapBlock *key,
     int32_t hashsize,
     uint32_t *seed,
     uint32_t *incr)
 {
-    uint32_t hashcode = keyHashCode;
+    uint32_t hashcode;
 
+    // compute hash code for key
+    hashcode = CLR_RT_HeapBlock::GetHashCode(key, true, 0);
     *seed = hashcode;
 
     // compute and store incr value

@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) .NET Foundation and Contributors
 // Portions Copyright (c) Microsoft Corporation.  All rights reserved.
 // See LICENSE file in the project root for full license information.
@@ -39,7 +39,7 @@ CLR_UINT32 CLR_RT_GarbageCollector::ExecuteCompaction()
 #if defined(NANOCLR_TRACE_MEMORY_STATS)
     if (s_CLR_RT_fTrace_MemoryStats >= c_CLR_RT_Trace_Info)
     {
-        CLR_Debug::Printf("\r\n\r\nGC: (Run %d) heap compaction completed\r\n", m_numberOfCompactions);
+        CLR_Debug::Printf("\r\n\r\nGC: heap compaction completed\r\n");
     }
 #endif
 
@@ -256,16 +256,6 @@ void CLR_RT_GarbageCollector::Heap_Compact()
 
                     freeRegion->Unlink();
 
-#ifdef DEBUG
-
-                    _ASSERTE(relocCurrent->m_destination >= (CLR_UINT8 *)freeRegion_hc->m_payloadStart);
-                    _ASSERTE(relocCurrent->m_destination < (CLR_UINT8 *)freeRegion_hc->m_payloadEnd);
-                    _ASSERTE(relocCurrent->m_start >= (CLR_UINT8 *)currentSource_hc->m_payloadStart);
-                    _ASSERTE(relocCurrent->m_start < (CLR_UINT8 *)currentSource_hc->m_payloadEnd);
-                    _ASSERTE(moveBytes == (move * sizeof(CLR_RT_HeapBlock)));
-
-#endif
-
                     memmove(relocCurrent->m_destination, relocCurrent->m_start, moveBytes);
 
                     if (freeRegion_Size)
@@ -472,12 +462,19 @@ void CLR_RT_GarbageCollector::Heap_Relocate_Pass(RelocateFtn ftn)
     NANOCLR_FOREACH_NODE(CLR_RT_HeapCluster, hc, g_CLR_RT_ExecutionEngine.m_heap)
     {
         CLR_RT_HeapBlock_Node *ptr = hc->m_payloadStart;
-        CLR_RT_HeapBlock_Node const *end = hc->m_payloadEnd;
+        CLR_RT_HeapBlock_Node *end = hc->m_payloadEnd;
+
+        // check pointers
+        _ASSERTE(ptr >= (void *)s_CLR_RT_Heap.m_location);
+        _ASSERTE(ptr < (void *)(s_CLR_RT_Heap.m_location + s_CLR_RT_Heap.m_size));
+        _ASSERTE(end >= (void *)s_CLR_RT_Heap.m_location);
+        _ASSERTE(end <= (void *)(s_CLR_RT_Heap.m_location + s_CLR_RT_Heap.m_size));
 
         while (ptr < end)
         {
             // check pointer
-            _ASSERTE(ptr >= hc->m_payloadStart && ptr <= hc->m_payloadEnd);
+            _ASSERTE(ptr >= (void *)s_CLR_RT_Heap.m_location);
+            _ASSERTE(ptr < (void *)(s_CLR_RT_Heap.m_location + s_CLR_RT_Heap.m_size));
 
             CLR_RT_HEAPBLOCK_RELOCATE(ptr);
 
@@ -537,29 +534,20 @@ void CLR_RT_GarbageCollector::Heap_Relocate(void **ref)
 #if defined(NANOCLR_TRACE_MEMORY_STATS)
         if (s_CLR_RT_fTrace_MemoryStats >= c_CLR_RT_Trace_Verbose)
         {
-            if (dst == nullptr)
-            {
-                // nothing to do here
-                CLR_Debug::Printf("\r\nGC: Skipping relocation as referenced object is null.\r\n");
-                return;
-            }
-            else
-            {
-                CLR_Debug::Printf("\r\nGC: Relocating Heap\r\n");
-            }
+            CLR_Debug::Printf("\r\nGC: Relocating Heap\r\n");
         }
 #endif
 
         if (dst >= g_CLR_RT_GarbageCollector.m_relocMinimum && dst < g_CLR_RT_GarbageCollector.m_relocMaximum)
         {
-            RelocationRegion const *relocBlocks = g_CLR_RT_GarbageCollector.m_relocBlocks;
+            RelocationRegion *relocBlocks = g_CLR_RT_GarbageCollector.m_relocBlocks;
             size_t left = 0;
             size_t right = g_CLR_RT_GarbageCollector.m_relocCount;
 
             while (left < right)
             {
                 size_t center = (left + right) / 2;
-                RelocationRegion const &relocCurrent = relocBlocks[center];
+                RelocationRegion &relocCurrent = relocBlocks[center];
 
                 if (dst < relocCurrent.m_start)
                 {
@@ -572,6 +560,8 @@ void CLR_RT_GarbageCollector::Heap_Relocate(void **ref)
                 else
                 {
                     destinationAddress = (void *)(dst + relocCurrent.m_offset);
+                    _ASSERTE(destinationAddress >= (void *)s_CLR_RT_Heap.m_location);
+                    _ASSERTE(destinationAddress < (void *)(s_CLR_RT_Heap.m_location + s_CLR_RT_Heap.m_size));
 
                     *ref = destinationAddress;
 

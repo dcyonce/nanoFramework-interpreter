@@ -1,15 +1,16 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+//
+// Copyright (c) .NET Foundation and Contributors
+// See LICENSE file in the project root for full license information.
+//
 
+using nanoFramework.nanoCLR.Host;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
-using nanoFramework.nanoCLR.Host;
-using Newtonsoft.Json;
 
 namespace nanoFramework.nanoCLR.CLI
 {
@@ -22,29 +23,7 @@ namespace nanoFramework.nanoCLR.CLI
         {
             Program.ProcessVerbosityOptions(options.Verbosity);
 
-            nanoCLRHostBuilder hostBuilder;
-
-            // are we to use a local DLL?
-            if (options.PathToCLRInstance != null)
-            {
-                if (options.UpdateCLR)
-                {
-                    // These options cannot be combined
-                    throw new CLIException(ExitCode.E9010);
-                }
-
-                // check if path exists
-                if (!Directory.Exists(options.PathToCLRInstance))
-                {
-                    throw new CLIException(ExitCode.E9009);
-                }
-
-                hostBuilder = nanoCLRHost.CreateBuilder(options.PathToCLRInstance);
-            }
-            else
-            {
-                hostBuilder = nanoCLRHost.CreateBuilder();
-            }
+            nanoCLRHostBuilder hostBuilder = nanoCLRHost.CreateBuilder();
             hostBuilder.UseConsoleDebugPrint();
 
             if (options.UpdateCLR)
@@ -54,57 +33,19 @@ namespace nanoFramework.nanoCLR.CLI
                     hostBuilder.GetCLRVersion(),
                     hostBuilder).Result;
             }
-            else if (options.GetCLRVersion || options.GetNativeAssemblies)
+            else if (options.GetCLRVersion)
             {
                 if (Program.VerbosityLevel > VerbosityLevel.Normal)
                 {
                     hostBuilder.OutputNanoClrDllInfo();
                 }
 
-                if (options.GetCLRVersion)
-                {
-                    Console.WriteLine($"nanoCLR version: {hostBuilder.GetCLRVersion()}");
-                }
-
-                if (options.GetNativeAssemblies)
-                {
-                    List<NativeAssemblyDetails> nativeAssemblies = hostBuilder.GetNativeAssemblies();
-
-                    if (nativeAssemblies is not null)
-                    {
-                        if (options.GetCLRVersion)
-                        {
-                            Console.WriteLine();
-                        }
-
-                        OutputNativeAssembliesList(nativeAssemblies);
-                    }
-                    else if (Program.VerbosityLevel > VerbosityLevel.Normal)
-                    {
-                        return (int)ExitCode.E9011;
-                    }
-                }
+                Console.WriteLine($"nanoCLR version: {hostBuilder.GetCLRVersion()}");
 
                 return (int)ExitCode.OK;
             }
 
             return (int)ExitCode.OK;
-        }
-
-        private static void OutputNativeAssembliesList(List<NativeAssemblyDetails> nativeAssemblies)
-        {
-            Console.WriteLine("Native assemblies:");
-
-            // do some math to get a tidy output
-            int maxAssemblyNameLength = nativeAssemblies.Max(assembly => assembly.Name.Length);
-            int maxAssemblyVersionLength = nativeAssemblies.Max(assembly => assembly.Version.ToString().Length);
-
-            foreach (NativeAssemblyDetails assembly in from na in nativeAssemblies
-                                                       orderby na.Name
-                                                       select na)
-            {
-                Console.WriteLine($"  {assembly.Name.PadRight(maxAssemblyNameLength)} v{assembly.Version.ToString().PadRight(maxAssemblyVersionLength)} 0x{assembly.CheckSum:X8}");
-            }
         }
 
         private static async Task<ExitCode> UpdateNanoCLRAsync(
