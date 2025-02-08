@@ -15,11 +15,11 @@
 extern uint32_t traceLoopCounter;
 #endif
 
-#if (HAL_USE_SERIAL_USB == TRUE)
-#include <usbcfg.h>
-#elif (HAL_USE_SERIAL == TRUE)
+// #if (HAL_USE_SERIAL_USB == TRUE)
+// #include <usbcfg.h>
+// #elif (HAL_USE_SERIAL == TRUE)
 #include <serialcfg.h>
-#endif
+//#endif
 
 void WP_ReceiveBytes(uint8_t **ptr, uint32_t *size)
 {

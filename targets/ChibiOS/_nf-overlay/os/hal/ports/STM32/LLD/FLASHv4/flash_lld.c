@@ -166,6 +166,7 @@ int flash_lld_write(uint32_t startAddress, uint32_t length, const uint8_t *buffe
     uint32_t offset = startAddress - FLASH_BASE;
     uint32_t remainingBytes = length;
     uint32_t error = FLASH_NO_ERROR;
+    uint32_t errorcount = 0;
 
     // Disable data cache
     __HAL_FLASH_DATA_CACHE_DISABLE();
@@ -213,6 +214,8 @@ int flash_lld_write(uint32_t startAddress, uint32_t length, const uint8_t *buffe
         error = FLASH_CheckErrors();
         if (error != FLASH_NO_ERROR)
         {
+            // quit on failure
+            errorcount++; // Added in order to have a breakpoint here
             break;
         }
     }

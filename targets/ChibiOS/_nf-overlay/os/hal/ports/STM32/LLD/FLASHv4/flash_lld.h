@@ -58,6 +58,8 @@ typedef enum
 
 #if defined(STM32L4P5xx) || defined(STM32L4Q5xx) || defined(STM32L4R5xx) || defined(STM32L4R7xx) ||                    \
     defined(STM32L4R9xx) || defined(STM32L4S5xx) || defined(STM32L4S7xx) || defined(STM32L4S9xx)
+    // DCY: Changed from 0x1000 (4k) to 0x2000 (8k) 2024-12-17
+    // Changed back to 0x1000 (4k) 2024-12-18 because this driver seems to only supports dual-banking.
 #define FLASH_PAGE_SIZE          ((uint32_t)0x1000)
 #define FLASH_PAGE_SIZE_128_BITS ((uint32_t)0x2000)
 #else
@@ -243,8 +245,7 @@ typedef struct STM32FlashDriver
 #define FLASH_FLAG_PEMPTY FLASH_SR_PEMPTY /*!< FLASH Program empty */
 #define FLASH_FLAG_SR_ERRORS                                                                                           \
     (FLASH_FLAG_OPERR | FLASH_FLAG_PROGERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_SIZERR |               \
-     FLASH_FLAG_PGSERR | FLASH_FLAG_MISERR | FLASH_FLAG_FASTERR | FLASH_FLAG_RDERR | FLASH_FLAG_OPTVERR |              \
-     FLASH_FLAG_PEMPTY)
+     FLASH_FLAG_PGSERR | FLASH_FLAG_MISERR | FLASH_FLAG_FASTERR | FLASH_FLAG_RDERR | FLASH_FLAG_OPTVERR )
 #else
 #define FLASH_FLAG_SR_ERRORS                                                                                           \
     (FLASH_FLAG_OPERR | FLASH_FLAG_PROGERR | FLASH_FLAG_WRPERR | FLASH_FLAG_PGAERR | FLASH_FLAG_SIZERR |               \
